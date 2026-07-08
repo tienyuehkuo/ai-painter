@@ -1,3 +1,5 @@
+import math
+
 from PIL import Image
 
 
@@ -26,3 +28,26 @@ class Canvas:
         image = Image.new("RGB", (self._width, self._height))
         image.putdata([pixel for row in self._pixels for pixel in row])
         image.save(filename)
+
+    def draw_stroke(self, x1, y1, x2, y2, radius, color):
+        for y in range(self._height):
+            for x in range(self._width):
+                distance = self._distance_to_line_segment(x, y, x1, y1, x2, y2)
+
+                if distance <= radius:
+                    self._pixels[y][x] = color
+
+    def _distance_to_line_segment(self, px, py, x1, y1, x2, y2):
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if dx == 0 and dy == 0:
+            return math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
+
+        t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+        t = max(0, min(1, t))
+
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+
+        return math.sqrt((px - closest_x) ** 2 + (py - closest_y) ** 2)
