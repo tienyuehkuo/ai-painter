@@ -1,3 +1,6 @@
+from PIL import Image
+
+
 class Canvas:
     def __init__(self, width, height):
         self._width = width
@@ -18,3 +21,8 @@ class Canvas:
     @property
     def pixels(self):
         return self._pixels
+
+    def save(self, filename):
+        image = Image.new("RGB", (self._width, self._height))
+        image.putdata([pixel for row in self._pixels for pixel in row])
+        image.save(filename)
