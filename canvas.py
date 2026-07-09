@@ -57,6 +57,39 @@ class Canvas:
 
         self.draw_stroke(x1, y1, x2, y2, radius, color)
 
+    def draw_centered_normalized_stroke(
+        self,
+        stroke,
+        min_radius=1,
+        max_radius=None,
+        max_length=None,
+    ):
+        if max_radius is None:
+            max_radius = max(self._width, self._height)
+        if max_length is None:
+            max_length = max(self._width, self._height)
+
+        center_x = stroke[0] * (self._width - 1)
+        center_y = stroke[1] * (self._height - 1)
+        angle = stroke[2] * 2 * math.pi
+        length = stroke[3] * max_length
+        radius = min_radius + stroke[4] * (max_radius - min_radius)
+        color = (
+            int(round(stroke[5] * 255)),
+            int(round(stroke[6] * 255)),
+            int(round(stroke[7] * 255)),
+        )
+
+        half_length = length / 2
+        dx = math.cos(angle) * half_length
+        dy = math.sin(angle) * half_length
+        x1 = center_x - dx
+        y1 = center_y - dy
+        x2 = center_x + dx
+        y2 = center_y + dy
+
+        self.draw_stroke(x1, y1, x2, y2, radius, color)
+
     def _distance_to_line_segment(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
         dy = y2 - y1
