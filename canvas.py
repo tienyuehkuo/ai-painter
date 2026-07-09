@@ -24,10 +24,13 @@ class Canvas:
     def pixels(self):
         return self._pixels
 
-    def save(self, filename):
+    def to_image(self):
         image = Image.new("RGB", (self._width, self._height))
         image.putdata([pixel for row in self._pixels for pixel in row])
-        image.save(filename)
+        return image
+
+    def save(self, filename):
+        self.to_image().save(filename)
 
     def draw_stroke(self, x1, y1, x2, y2, radius, color):
         for y in range(self._height):
@@ -36,6 +39,23 @@ class Canvas:
 
                 if distance <= radius:
                     self._pixels[y][x] = color
+
+    def draw_normalized_stroke(self, stroke, min_radius=1, max_radius=None):
+        if max_radius is None:
+            max_radius = max(self._width, self._height)
+
+        x1 = stroke[0] * (self._width - 1)
+        y1 = stroke[1] * (self._height - 1)
+        x2 = stroke[2] * (self._width - 1)
+        y2 = stroke[3] * (self._height - 1)
+        radius = min_radius + stroke[4] * (max_radius - min_radius)
+        color = (
+            int(round(stroke[5] * 255)),
+            int(round(stroke[6] * 255)),
+            int(round(stroke[7] * 255)),
+        )
+
+        self.draw_stroke(x1, y1, x2, y2, radius, color)
 
     def _distance_to_line_segment(self, px, py, x1, y1, x2, y2):
         dx = x2 - x1
