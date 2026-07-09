@@ -54,7 +54,7 @@ class PainterPolicy(nn.Module):
         features = self.shared(features)
 
         mean = self.mean_head(features)
-        log_std = self.log_std_head(features).clamp(-5.0, -0.1)
+        log_std = self.log_std_head(features).clamp(-5.0, -2.0)
         std = log_std.exp()
         return mean, std
 
