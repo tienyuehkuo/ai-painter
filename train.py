@@ -59,7 +59,17 @@ class ReplayBuffer:
         return len(self.items)
 
 
-def rollout(policy, target_tensor, image_size, steps, gamma, device, min_radius, max_radius):
+def rollout(
+    policy,
+    target_tensor,
+    image_size,
+    steps,
+    gamma,
+    device,
+    min_radius,
+    max_radius,
+    max_length,
+):
     canvas = Canvas(image_size, image_size)
     trajectory = []
 
@@ -76,10 +86,11 @@ def rollout(policy, target_tensor, image_size, steps, gamma, device, min_radius,
                 action.detach().clone(),
             ))
 
-            canvas.draw_normalized_stroke(
+            canvas.draw_centered_normalized_stroke(
                 tensor_action_to_list(action),
                 min_radius=min_radius,
                 max_radius=max_radius,
+                max_length=max_length,
             )
 
     final_canvas_tensor = canvas_to_tensor(canvas, device)
@@ -154,6 +165,7 @@ def parse_args():
     parser.add_argument("--buffer-size", type=int, default=5000)
     parser.add_argument("--min-radius", type=float, default=1.0)
     parser.add_argument("--max-radius", type=float, default=None)
+    parser.add_argument("--max-length", type=float, default=None)
     parser.add_argument("--output-dir", default="outputs")
     parser.add_argument("--device", default="cpu")
     return parser.parse_args()
@@ -185,6 +197,7 @@ def main():
             device=device,
             min_radius=args.min_radius,
             max_radius=args.max_radius,
+            max_length=args.max_length,
         )
         replay.add_many(transitions)
 
