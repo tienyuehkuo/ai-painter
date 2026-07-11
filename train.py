@@ -30,8 +30,12 @@ def tensor_action_to_list(action):
     return action.detach().cpu().squeeze(0).tolist()
 
 
+def l1_error(canvas_tensor, target_tensor):
+    return F.l1_loss(canvas_tensor, target_tensor).item()
+
+
 def l1_reward(canvas_tensor, target_tensor):
-    return -F.l1_loss(canvas_tensor, target_tensor).item()
+    return -l1_error(canvas_tensor, target_tensor)
 
 
 class ReplayBuffer:
@@ -72,10 +76,12 @@ def rollout(
 ):
     canvas = Canvas(image_size, image_size)
     trajectory = []
+    rewards = []
 
     with torch.no_grad():
         for step in range(steps):
             canvas_tensor = canvas_to_tensor(canvas, device)
+            old_l1_error = l1_error(canvas_tensor, target_tensor)
             step_percentage = torch.tensor([[step / steps]], dtype=torch.float32, device=device)
             action, _, _ = policy.sample_action(target_tensor, canvas_tensor, step_percentage)
 
@@ -93,13 +99,23 @@ def rollout(
                 max_length=max_length,
             )
 
+            new_canvas_tensor = canvas_to_tensor(canvas, device)
+            new_l1_error = l1_error(new_canvas_tensor, target_tensor)
+            rewards.append(old_l1_error - new_l1_error)
+
     final_canvas_tensor = canvas_to_tensor(canvas, device)
     final_reward = l1_reward(final_canvas_tensor, target_tensor)
 
+    returns = []
+    running_return = 0.0
+    for reward in reversed(rewards):
+        running_return = reward + gamma * running_return
+        returns.append(running_return)
+    returns.reverse()
+
     transitions = []
-    for index, (target, canvas_tensor, step_percentage, action) in enumerate(trajectory):
-        discount = gamma ** (steps - 1 - index)
-        ret = torch.tensor([[discount * final_reward]], dtype=torch.float32, device=device)
+    for (target, canvas_tensor, step_percentage, action), return_value in zip(trajectory, returns):
+        ret = torch.tensor([[return_value]], dtype=torch.float32, device=device)
         transitions.append((target, canvas_tensor, step_percentage, action, ret))
 
     return canvas, final_reward, transitions
